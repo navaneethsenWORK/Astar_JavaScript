@@ -125,6 +125,7 @@ function Map(map) {
     }
 }
 
+// Some getters
 Map.prototype.getStartNode = function () {
     return startNode;
 };
@@ -182,14 +183,14 @@ var a_star = {
             for (var y = 0; y < nodeMap[x].length; y++) {
                 nodeMap[x][y].movementCostFromStart = 0;
                 nodeMap[x][y].heuristicCost = 0;
-                nodeMap[x][y].closed = false;
                 nodeMap[x][y].parent = null;
             }
         }
     },
-    search: function (_grid, heuristic, allowDiagonalMovement) {
+    find: function (map, heuristic, allowDiagonalMovement) {
 
-        var grid = _grid.nodes;
+        //Get the nodes in the map fo further processing
+        var grid = map.nodes;
 
         // reset the lists for starting a new search
         a_star.clear(grid);
@@ -197,14 +198,17 @@ var a_star = {
         // setting the default to manhattan
         heuristic = heuristic || a_star.manhattan;
 
-        // allow diagonal movement in the cells
-        this.allowDiagonalMovement = allowDiagonalMovement;
+        // allow diagonal movement in the cells, default to true
+        this.allowDiagonalMovement = allowDiagonalMovement || true;
 
         // List to store the nodes for calculation
         var openList = [];
 
+        // List to store the nodes which were checked for goodness
+        var closedList = [];
+
         // Add the startNode to the openList
-        openList.push(_grid.getStartNode());
+        openList.push(map.getStartNode());
 
         // while we haven't reached the end node
         while (openList.length > 0) {
@@ -212,8 +216,8 @@ var a_star = {
             // Get the first node from the not-searched list(It will be sorted based on the lowest cost)
             var currentNode = openList[0];
 
-            // Is our current node the end node, then DONE!
-            if (currentNode == _grid.getEndNode()) {
+            // Is our current node the end node? then DONE!
+            if (currentNode == map.getEndNode()) {
                 var curr = currentNode;
                 var ret = [];
                 while (curr.parent) {
@@ -225,9 +229,10 @@ var a_star = {
                 return ret.reverse();
             }
 
-            // move current Node to the already searched mode
+            // Remove the searched node from the openList
             openList.splice(0, 1);
-            currentNode.closed = true;
+            // move current Node to the already searched list
+            closedList.push(currentNode);
 
             // get all the valid neighbours to the current node
             var neighbours = a_star.getNeighbours(grid, currentNode);
@@ -236,8 +241,8 @@ var a_star = {
             for (var i = 0; i < neighbours.length; i++) {
                 var neighbour = neighbours[i];
 
-                // We have seen this node before and it was rejected, please ignore
-                if (neighbour.closed) {
+                // The node is in closed List, means we have seen this node before
+                if (closedList.indexOf(neighbour) != -1) {
                     continue;
                 }
 
@@ -266,7 +271,7 @@ var a_star = {
                     if (isGoodNeighbour) {
                         neighbour.parent = currentNode;
                         neighbour.movementCostFromStart = neighbourMovementCostFromStart;
-                        neighbour.heuristicCost = heuristic(neighbour, _grid.getEndNode());
+                        neighbour.heuristicCost = heuristic(neighbour, map.getEndNode());
                     }
                 }
             }
@@ -356,7 +361,6 @@ var a_star = {
                 ret.push(gridMap[x + 1][y + 1]);
             }
         }
-
         return ret;
     },
     /**
@@ -403,18 +407,20 @@ function sortFunction(node1, node2) {
 
 /**
  * The main method that runs the algorithm
- * @param map
+ * @param rawMap
  */
-function runAStarSearch(map) {
-    var _map = new Map(map);
+function runAStarSearch(rawMap) {
+    var map = new Map(rawMap);
 
-    //Prints the map
-    console.log(_map.toString());
+    //Prints the rawMap
+    console.log(map.toString());
 
     //Get the searched Path
-    var result = a_star.search(_map, a_star.manhattan, true);
+    var result = a_star.find(map, a_star.manhattan, true);
 
     console.log(result.toString());
 }
 
 runAStarSearch(arr1);
+
+// Need to re-plot the graph with the path
